@@ -817,6 +817,9 @@ function AppFooter() {
   return (
     <footer className="app-footer">
       <small>Copyright (c) 2026 dueyama. アプリケーションコード: MIT License.</small>
+      <a href="https://github.com/dueyama/pmda-pk-curve-viewer" target="_blank" rel="noreferrer">
+        GitHub
+      </a>
     </footer>
   );
 }
