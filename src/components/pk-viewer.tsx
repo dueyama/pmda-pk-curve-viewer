@@ -173,6 +173,13 @@ const EXAMPLE_DRUGS = [
     url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/530100_1179045B1072_1_15",
   },
   {
+    group: "steady",
+    category: "抗精神病薬",
+    name: "レキサルティ",
+    description: "ブレクスピプラゾール製剤の例。1日1回型で、半減期が長めの残り方を眺めます。",
+    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/180078_1179058F3023_1_05",
+  },
+  {
     group: "monitoring",
     category: "抗凝固薬",
     name: "ワーファリン",
