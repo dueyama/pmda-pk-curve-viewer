@@ -1336,6 +1336,20 @@ h1 {
   margin: 0;
 }
 
+.app-footer {
+  color: var(--faint);
+  display: flex;
+  justify-content: center;
+  margin-top: 22px;
+  padding: 10px 0 4px;
+  text-align: center;
+}
+
+.app-footer small {
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 @media (max-width: 1180px) {
   .workspace-grid {
     grid-template-columns: 280px minmax(0, 1fr);

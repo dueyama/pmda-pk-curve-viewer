@@ -709,7 +709,16 @@ export function PkViewer() {
       </section>
 
       <GlossarySection />
+      <AppFooter />
     </main>
+  );
+}
+
+function AppFooter() {
+  return (
+    <footer className="app-footer">
+      <small>Copyright (c) 2026 Daishin. アプリケーションコード: MIT License.</small>
+    </footer>
   );
 }
 
