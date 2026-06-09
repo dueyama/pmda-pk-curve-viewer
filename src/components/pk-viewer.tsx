@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { FormEvent, useCallback, useMemo, useState } from "react";
 import { simulateCandidate } from "@/lib/pk-model";
 import type { ModelPoint, ParsePmdaResult, PkCandidate, SimulationResult } from "@/lib/types";
@@ -555,7 +556,14 @@ export function PkViewer() {
       <section className="hero-panel" aria-labelledby="app-title">
         <div className="brand-row">
           <div className="brand-mark" aria-hidden="true">
-            <span />
+            <Image
+              alt=""
+              className="brand-icon"
+              height={48}
+              priority
+              src="/icon.png"
+              width={48}
+            />
           </div>
           <div>
             <p className="brand-name">薬物動態カーブビューア</p>

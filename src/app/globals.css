@@ -81,19 +81,24 @@ a {
 
 .brand-mark {
   align-items: center;
-  background: var(--surface-strong);
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(220, 230, 225, 0.9);
   border-radius: 8px;
+  box-shadow: 0 10px 24px rgba(16, 35, 31, 0.1);
   display: grid;
-  height: 42px;
+  height: 52px;
   justify-items: center;
-  width: 42px;
+  overflow: hidden;
+  padding: 3px;
+  width: 52px;
 }
 
-.brand-mark span {
-  background: linear-gradient(180deg, #94d7c9, #f3d7a7);
-  border-radius: 999px 999px 4px 4px;
-  height: 24px;
-  width: 15px;
+.brand-icon {
+  border-radius: 8px;
+  display: block;
+  height: 48px;
+  object-fit: cover;
+  width: 48px;
 }
 
 .brand-name,

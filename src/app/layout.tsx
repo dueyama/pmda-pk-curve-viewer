@@ -5,6 +5,10 @@ export const metadata: Metadata = {
   title: "薬物動態カーブビューア",
   description:
     "PMDA電子添文XMLから薬物動態パラメータを読み、反復服用時の概算血漿中濃度を可視化します。",
+  icons: {
+    icon: "/icon.png",
+    apple: "/apple-icon.png",
+  },
 };
 
 export const viewport: Viewport = {
