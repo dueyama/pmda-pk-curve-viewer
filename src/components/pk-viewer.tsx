@@ -153,6 +153,13 @@ const EXAMPLE_DRUGS = [
   },
   {
     group: "steady",
+    category: "抗血小板薬",
+    name: "バイアスピリン",
+    description: "低用量アスピリン製剤の例。抗凝固薬とは別の抗血小板薬で、1日1回用法の推移を見ます。",
+    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/630004_3399007H1021_1_21",
+  },
+  {
+    group: "steady",
     category: "認知症薬",
     name: "アリセプト",
     description: "ドネペジル塩酸塩製剤の例。認知症症状の進行抑制と、その限界の注意も添文で見ます。",
@@ -192,6 +199,13 @@ const EXAMPLE_DRUGS = [
     name: "エリキュース",
     description: "アピキサバン製剤の例。80歳以上などの減量条件や出血リスクの注意も添文で見ます。",
     url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/670605_3339004F1029_1_22",
+  },
+  {
+    group: "monitoring",
+    category: "抗凝固薬",
+    name: "ワーファリン",
+    description: "従来から使われるワルファリン製剤の例。INRなどの検査管理が前提の薬として見ます。",
+    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/300119_3332001D1023_2_01",
   },
   {
     group: "monitoring",
