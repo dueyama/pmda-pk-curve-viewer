@@ -2,6 +2,8 @@
 
 PMDA電子添文XMLから薬物動態パラメータを読み取り、薬の血中濃度が時間とともにどう変わるかを概算表示するWebアプリです。
 
+公開URL: [https://pmda-pk-curve-viewer.vercel.app](https://pmda-pk-curve-viewer.vercel.app)
+
 このアプリは日本のPMDA公開情報を前提にした、日本語・日本国内向けの教育用可視化ツールです。医療判断、服薬指示、用量調整、診断、治療方針の決定には使えません。
 
 ## 何をするアプリか
