@@ -421,6 +421,50 @@ h1 {
   max-width: 680px;
 }
 
+.example-category-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.example-category-key {
+  --tone-accent: var(--accent);
+  --tone-bg: #eef5f1;
+  --tone-border: #cfe0d8;
+  align-items: center;
+  background: var(--tone-bg);
+  border: 1px solid var(--tone-border);
+  border-left: 4px solid var(--tone-accent);
+  border-radius: 8px;
+  display: inline-flex;
+  gap: 8px;
+  min-height: 34px;
+  padding: 7px 10px;
+}
+
+.example-category-key strong {
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.example-category-key small {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.example-category-note {
+  background: #f7faf8;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.7;
+  margin: 0;
+  padding: 10px 12px;
+}
+
 .example-groups {
   display: grid;
   gap: 16px;
@@ -457,8 +501,11 @@ h1 {
 }
 
 .example-card {
-  background: #fbfcfb;
-  border: 1px solid var(--border);
+  --tone-accent: var(--accent);
+  --tone-bg: #fbfcfb;
+  --tone-border: var(--border);
+  background: var(--tone-bg);
+  border: 1px solid var(--tone-border);
   border-radius: 8px;
   color: var(--text);
   display: grid;
@@ -474,36 +521,42 @@ h1 {
     transform 140ms ease;
 }
 
-.example-card:hover,
-.example-card.active {
-  border-color: rgba(37, 111, 103, 0.62);
-  box-shadow: 0 0 0 4px rgba(37, 111, 103, 0.08);
-  transform: translateY(-1px);
-}
-
-.example-card.active {
-  background: linear-gradient(180deg, #e9f8f3, #fbfcfb);
-  border-color: rgba(37, 111, 103, 0.9);
-  outline: 3px solid rgba(37, 111, 103, 0.24);
-  outline-offset: 2px;
-  box-shadow:
-    inset 0 0 0 1px rgba(37, 111, 103, 0.28),
-    0 14px 28px rgba(16, 35, 31, 0.14);
-}
-
-.example-card.active::before {
-  background: var(--accent);
+.example-card::before {
+  background: var(--tone-accent);
   border-radius: 999px;
   bottom: 12px;
   content: "";
   left: 8px;
+  opacity: 0.7;
   position: absolute;
   top: 12px;
   width: 4px;
 }
 
+.example-card:hover,
+.example-card.active {
+  border-color: color-mix(in srgb, var(--tone-accent) 54%, var(--tone-border));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tone-accent) 12%, transparent);
+  transform: translateY(-1px);
+}
+
+.example-card.active {
+  background: color-mix(in srgb, var(--tone-bg) 80%, white);
+  border-color: var(--tone-accent);
+  outline: 3px solid color-mix(in srgb, var(--tone-accent) 24%, transparent);
+  outline-offset: 2px;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--tone-accent) 28%, transparent),
+    0 14px 28px rgba(16, 35, 31, 0.14);
+}
+
+.example-card.active::before {
+  opacity: 1;
+  width: 4px;
+}
+
 .example-card.active strong {
-  color: var(--accent-dark);
+  color: color-mix(in srgb, var(--tone-accent) 74%, var(--text));
 }
 
 .example-card-top {
@@ -515,7 +568,7 @@ h1 {
 }
 
 .example-card-category {
-  color: var(--accent);
+  color: var(--tone-accent);
   font-size: 11px;
   font-weight: 900;
 }
@@ -543,26 +596,40 @@ h1 {
   margin: 0;
 }
 
-.example-group.monitoring .example-card {
-  background: #fffaf3;
-  border-color: #efd7b7;
+.tone-acute {
+  --tone-accent: #a05a1f;
+  --tone-bg: #fff7ed;
+  --tone-border: #f4d2ad;
 }
 
-.example-group.monitoring .example-card.active {
-  background: linear-gradient(180deg, #fff2df, #fffaf3);
-  border-color: #d08a46;
-  outline-color: rgba(183, 131, 74, 0.28);
-  box-shadow:
-    inset 0 0 0 1px rgba(154, 52, 18, 0.18),
-    0 14px 28px rgba(122, 81, 51, 0.14);
+.tone-chronic {
+  --tone-accent: #256f67;
+  --tone-bg: #f1f8f4;
+  --tone-border: #cfe0d8;
 }
 
-.example-group.monitoring .example-card.active::before {
-  background: var(--danger);
+.tone-circulation {
+  --tone-accent: #a83a32;
+  --tone-bg: #fff5f3;
+  --tone-border: #efc7c2;
 }
 
-.example-group.monitoring .example-card-category {
-  color: var(--danger);
+.tone-neuro {
+  --tone-accent: #4f5f99;
+  --tone-bg: #f4f6ff;
+  --tone-border: #cdd5ef;
+}
+
+.tone-hormone {
+  --tone-accent: #8a5a12;
+  --tone-bg: #fff8e6;
+  --tone-border: #ead39a;
+}
+
+.tone-monitoring {
+  --tone-accent: #9a3412;
+  --tone-bg: #fff3e8;
+  --tone-border: #efc099;
 }
 
 .example-selection-status {
@@ -924,8 +991,8 @@ h1 {
 .metric-strip {
   display: grid;
   gap: 8px;
-  grid-template-columns: repeat(4, minmax(74px, 1fr));
-  max-width: 520px;
+  grid-template-columns: repeat(5, minmax(72px, 1fr));
+  max-width: 640px;
 }
 
 .metric-strip div {

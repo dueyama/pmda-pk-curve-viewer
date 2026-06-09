@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useMemo, useState } from "react";
 import { simulateCandidate } from "@/lib/pk-model";
 import type { ModelPoint, ParsePmdaResult, PkCandidate, SimulationResult } from "@/lib/types";
 
@@ -66,6 +66,20 @@ const EXAMPLE_DRUGS = [
     name: "バクロフェン",
     description: "痙性麻痺などで使われる例。複数回投与の山谷を見ます。",
     url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/480866_1249006F1054_3_07",
+  },
+  {
+    group: "short",
+    category: "ED治療薬",
+    name: "シルデナフィル",
+    description: "バイアグラ系成分の例。短時間のピークと減り方を薬物動態として眺めます。",
+    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/230034_259000AF1075_1_10",
+  },
+  {
+    group: "short",
+    category: "ED治療薬",
+    name: "タダラフィル",
+    description: "シアリス系成分の例。同じPDE5阻害薬でも半減期が長めの残り方を見ます。",
+    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/290683_259000CF2100_1_06",
   },
   {
     group: "steady",
@@ -153,10 +167,31 @@ const EXAMPLE_DRUGS = [
   },
   {
     group: "steady",
+    category: "痛風・高尿酸血症薬",
+    name: "フェブリク",
+    description: "フェブキソスタット製剤の例。痛風・高尿酸血症で使われる1日1回型の推移を見ます。",
+    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/470310_3949003F1023_1_18",
+  },
+  {
+    group: "steady",
     category: "抗血小板薬",
     name: "バイアスピリン",
     description: "低用量アスピリン製剤の例。抗凝固薬とは別の抗血小板薬で、1日1回用法の推移を見ます。",
     url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/630004_3399007H1021_1_21",
+  },
+  {
+    group: "steady",
+    category: "経口避妊薬",
+    name: "マーベロン",
+    description: "デソゲストレル・エチニルエストラジオール配合剤の例。21日投与と休薬は単純化して見ます。",
+    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/181615_254910CF1025_3_03",
+  },
+  {
+    group: "steady",
+    category: "AGA治療薬",
+    name: "フィナステリド",
+    description: "男性型脱毛症の進行遅延で使われる例。1日1回型の血中濃度推移を見ます。",
+    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/480235_249900XF1080_1_05",
   },
   {
     group: "steady",
@@ -211,7 +246,7 @@ const EXAMPLE_DRUGS = [
     group: "monitoring",
     category: "免疫抑制薬",
     name: "タクロリムス",
-    description: "免疫の働きを抑える薬。移植後や自己免疫疾患で使われます。",
+    description: "移植後などで使われる例。継続と血中濃度管理が重視される薬として見ます。",
     url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/650037_3999014M1057_2_14",
   },
   {
@@ -222,6 +257,42 @@ const EXAMPLE_DRUGS = [
     url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/480235_1190016F1075_1_03",
   },
 ] as const;
+
+const EXAMPLE_TONES = [
+  { id: "acute", label: "急性・短時間", description: "痛み・片頭痛・EDなど" },
+  { id: "chronic", label: "日常・慢性", description: "降圧・糖尿病・尿酸など" },
+  { id: "circulation", label: "血栓系", description: "抗血小板 / 抗凝固" },
+  { id: "neuro", label: "神経・精神", description: "認知症・精神科系など" },
+  { id: "hormone", label: "ホルモン", description: "避妊・甲状腺など" },
+  { id: "monitoring", label: "要管理", description: "免疫抑制薬など" },
+] as const;
+
+type ExampleTone = (typeof EXAMPLE_TONES)[number]["id"];
+
+const EXAMPLE_CATEGORY_TONES: Record<string, ExampleTone> = {
+  痛み止め: "acute",
+  解熱鎮痛薬: "acute",
+  片頭痛薬: "acute",
+  筋緊張改善薬: "acute",
+  筋弛緩薬: "acute",
+  ED治療薬: "acute",
+  抗炎症鎮痛薬: "acute",
+  抗菌薬: "acute",
+  睡眠薬: "acute",
+  降圧薬: "chronic",
+  アレルギー薬: "chronic",
+  胃薬: "chronic",
+  糖尿病薬: "chronic",
+  "痛風・高尿酸血症薬": "chronic",
+  抗血小板薬: "circulation",
+  抗凝固薬: "circulation",
+  認知症薬: "neuro",
+  抗精神病薬: "neuro",
+  経口避妊薬: "hormone",
+  AGA治療薬: "hormone",
+  甲状腺ホルモン薬: "hormone",
+  免疫抑制薬: "monitoring",
+};
 
 const EXAMPLE_GROUPS = [
   {
@@ -448,14 +519,6 @@ export function PkViewer() {
       });
     }
   }, []);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      void loadPmda(SAMPLE_URL);
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-  }, [loadPmda]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -829,6 +892,17 @@ function ExampleDrugStrip({
           代表例は経口薬中心です。薬を選ぶとURL入力欄にXML URLをセットします。解析するとPMDA XMLを取得し、下の「血中濃度の時間推移」に曲線を表示します。
         </p>
       </div>
+      <div className="example-category-legend" aria-label="薬効カテゴリの色分け">
+        {EXAMPLE_TONES.map((tone) => (
+          <span className={`example-category-key tone-${tone.id}`} key={tone.id}>
+            <strong>{tone.label}</strong>
+            <small>{tone.description}</small>
+          </span>
+        ))}
+      </div>
+      <p className="example-category-note">
+        「血液サラサラ」系は、血小板の働きを抑える抗血小板薬と、凝固因子の働きを抑える抗凝固薬を分けて表示しています。
+      </p>
       <div className="example-groups">
         {EXAMPLE_GROUPS.map((group) => {
           const drugs = EXAMPLE_DRUGS.filter((drug) => drug.group === group.id);
@@ -842,11 +916,12 @@ function ExampleDrugStrip({
               <div className="example-cards">
                 {drugs.map((drug) => {
                   const isActive = drug.url === activeUrl;
+                  const tone = EXAMPLE_CATEGORY_TONES[drug.category] ?? "chronic";
 
                   return (
                     <button
                       aria-pressed={isActive}
-                      className={isActive ? "example-card active" : "example-card"}
+                      className={`example-card tone-${tone}${isActive ? " active" : ""}`}
                       disabled={disabled}
                       key={drug.url}
                       onClick={() => {
@@ -978,8 +1053,9 @@ function MetricStrip({
   const metrics = [
     ["Cmax", candidate?.cmax ? `${candidate.cmax.mean} ${candidate.cmax.unit}` : "-"],
     ["tmax", candidate?.tmax ? `${candidate.tmax.mean} ${candidate.tmax.unit}` : "-"],
+    ["t1/2", candidate?.halfLife ? `${candidate.halfLife.mean} ${candidate.halfLife.unit}` : "-"],
     ...series.map((item) => [item.name, item.result.peak.toFixed(1)]),
-  ].slice(0, 4);
+  ].slice(0, 5);
 
   return (
     <div className="metric-strip">
