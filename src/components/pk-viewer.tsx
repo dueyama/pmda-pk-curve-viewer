@@ -717,7 +717,7 @@ export function PkViewer() {
 function AppFooter() {
   return (
     <footer className="app-footer">
-      <small>Copyright (c) 2026 Daishin. アプリケーションコード: MIT License.</small>
+      <small>Copyright (c) 2026 dueyama. アプリケーションコード: MIT License.</small>
     </footer>
   );
 }
