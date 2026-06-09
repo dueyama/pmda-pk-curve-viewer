@@ -153,6 +153,13 @@ const EXAMPLE_DRUGS = [
   },
   {
     group: "steady",
+    category: "認知症薬",
+    name: "アリセプト",
+    description: "ドネペジル塩酸塩製剤の例。認知症症状の進行抑制と、その限界の注意も添文で見ます。",
+    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/170033_1190012C1020_1_32",
+  },
+  {
+    group: "steady",
     category: "抗精神病薬",
     name: "リスペリドン",
     description: "統合失調症などで使われる例。1日2回型の標準用法と山谷を見ます。",
@@ -182,9 +189,9 @@ const EXAMPLE_DRUGS = [
   {
     group: "monitoring",
     category: "抗凝固薬",
-    name: "ワーファリン",
-    description: "血液を固まりにくくする薬。血栓予防などで使われます。",
-    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/300119_3332001D1023_2_01",
+    name: "エリキュース",
+    description: "アピキサバン製剤の例。80歳以上などの減量条件や出血リスクの注意も添文で見ます。",
+    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/670605_3339004F1029_1_22",
   },
   {
     group: "monitoring",
