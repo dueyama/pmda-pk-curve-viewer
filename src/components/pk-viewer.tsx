@@ -253,6 +253,13 @@ const EXAMPLE_DRUGS = [
   {
     group: "short",
     category: "睡眠薬",
+    name: "デエビゴ",
+    description: "オレキシン受容体拮抗薬の例。翌日以降に残る形も含めて血中濃度推移を眺めます。",
+    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/170033_1190027F1022_1_08",
+  },
+  {
+    group: "short",
+    category: "睡眠薬",
     name: "ラメルテオン",
     description: "睡眠薬系の例。未変化体と代謝物の候補が出ます。",
     url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/480235_1190016F1075_1_03",
