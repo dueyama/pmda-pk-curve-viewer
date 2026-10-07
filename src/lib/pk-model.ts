@@ -27,11 +27,11 @@ export function simulateCandidate(
   const jitterHours = Math.max(0, timingJitterHours);
 
   if (
-    !cmax ||
-    !tmax ||
-    !halfLife ||
+    !cmax || !Number.isFinite(cmax) || cmax <= 0 ||
+    !tmax || !Number.isFinite(tmax) || tmax <= 0 ||
+    !halfLife || !Number.isFinite(halfLife) || halfLife <= 0 ||
     dosingTimes.length === 0 ||
-    days <= 0 ||
+    !Number.isFinite(days) || days <= 0 ||
     !Number.isFinite(doseMultiplier) ||
     doseMultiplier <= 0 ||
     !Number.isFinite(timingJitterHours)
@@ -54,16 +54,22 @@ export function simulateCandidate(
     );
   }
   const ke = Math.log(2) / halfLife;
-  const kaResult = estimateKa(ke, tmax);
+  if (!Number.isFinite(ke) || ke <= 0) {
+    return null;
+  }
+  const kaResult = estimateKa(ke, tmax, candidate.allowSlowAbsorption ?? false);
   const ka = kaResult.ka;
   warnings.push(...kaResult.warnings);
 
   const peakBase = singleDoseBase(tmax, ke, ka);
-  if (peakBase <= 0) {
+  if (!Number.isFinite(ka) || ka <= 0 || !Number.isFinite(peakBase) || peakBase <= 0) {
     return null;
   }
 
   const scale = cmax / peakBase;
+  if (!Number.isFinite(scale)) {
+    return null;
+  }
   const totalHours = Math.round(days * 24);
   const doses = buildDoseEvents(dosingTimes, days, doseMultiplier, jitterHours);
   const points: ModelPoint[] = [];
@@ -154,6 +160,7 @@ function formatClockHour(hour: number): string {
 function estimateKa(
   ke: number,
   tmax: number,
+  allowSlowAbsorption: boolean,
 ): {
   ka: number;
   warnings: string[];
@@ -161,14 +168,37 @@ function estimateKa(
   const maxTmax = 1 / ke;
   const warnings: string[] = [];
 
-  if (tmax >= maxTmax) {
+  // 既存薬は従来の近似を保持。出典確認済みの候補だけ探索範囲を広げる。
+  if (!allowSlowAbsorption && tmax >= maxTmax) {
     warnings.push(
       "tmax が半減期から推定される上限に近いため、ka は ke に近い値として近似しています。",
     );
     return { ka: ke * 1.001, warnings };
   }
 
-  let low = ke * 1.0001;
+  if (Math.abs(tmax / maxTmax - 1) < 1e-8) {
+    return { ka: ke, warnings };
+  }
+
+  if (tmax > maxTmax) {
+    warnings.push(
+      "このtmaxと半減期を合わせると推定kaがkeより小さくなります。曲線の後半は添文の半減期より緩やかになるため、実測の消失過程を再現するモデルではありません。kaは曲線形状の推定値です。",
+    );
+    // ka < ke の数学的な解も探索する。別試験の速度定数は混ぜない。
+    let low = ke * 1e-12;
+    let high = ke;
+    for (let i = 0; i < 80; i += 1) {
+      const mid = (low + high) / 2;
+      if (tmaxFromRates(mid, ke) > tmax) {
+        low = mid;
+      } else {
+        high = mid;
+      }
+    }
+    return { ka: (low + high) / 2, warnings };
+  }
+
+  let low = allowSlowAbsorption ? ke : ke * 1.0001;
   let high = Math.max(ke * 2, 1);
 
   while (tmaxFromRates(high, ke) > tmax && high < 10000) {
@@ -204,14 +234,23 @@ function hoursFromParameter(parameter: PkCandidate["tmax"]): number | null {
 }
 
 function tmaxFromRates(ka: number, ke: number): number {
-  return Math.log(ka / ke) / (ka - ke);
+  if (ka === ke) {
+    return 1 / ke;
+  }
+  const relativeDifference = (ka - ke) / ke;
+  return (Math.abs(relativeDifference) < 1e-4
+    ? Math.log1p(relativeDifference)
+    : Math.log(ka / ke)) / (ka - ke);
 }
 
 function singleDoseBase(t: number, ke: number, ka: number): number {
   if (t < 0) {
     return 0;
   }
-  return Math.exp(-ke * t) - Math.exp(-ka * t);
+  if (ka === ke) {
+    return ke * t * Math.exp(-ke * t);
+  }
+  return Math.abs(Math.exp(-ke * t) - Math.exp(-ka * t));
 }
 
 function singleDose(

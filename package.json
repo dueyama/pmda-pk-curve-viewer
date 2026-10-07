@@ -8,7 +8,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "node --import ./tests/register-typescript.mjs --test tests/*.test.mjs",
+    "test:regression": "node --import ./tests/register-typescript.mjs scripts/verify-existing-samples.mjs"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

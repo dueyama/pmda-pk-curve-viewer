@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { FormEvent, useCallback, useMemo, useState } from "react";
 import { simulateCandidate } from "@/lib/pk-model";
+import { MEIACT_XML_URL } from "@/lib/sample-reference";
 import type { ModelPoint, ParsePmdaResult, PkCandidate, SimulationResult } from "@/lib/types";
 
 const SAMPLE_URL =
@@ -12,6 +13,13 @@ const MAX_DISPLAY_DAYS = 60;
 const MIN_PROGRESS_MS = 650;
 
 const EXAMPLE_DRUGS = [
+  {
+    group: "short",
+    category: "抗菌薬",
+    name: "メイアクトMS錠100mg",
+    description: "成人錠剤・食後の参考例。活性体セフジトレンの血清中総濃度を眺めます。",
+    url: MEIACT_XML_URL,
+  },
   {
     group: "short",
     category: "痛み止め",
@@ -777,6 +785,15 @@ export function PkViewer() {
             <MetricStrip candidate={selectedCandidate} series={series} />
           </div>
 
+          {loadState.status === "ready" && loadState.data.modelReference ? (
+            <ReferenceModelNotice reference={loadState.data.modelReference} compact />
+          ) : null}
+          {loadState.status === "ready" && loadState.data.modelReference
+            ? series[0]?.result.warnings.map((warning) => (
+                <p className="warning-copy" key={warning}>{warning}</p>
+              ))
+            : null}
+
           {series.length > 0 ? (
             <ConcentrationChart
               cmax={selectedCandidate?.cmax?.mean ?? null}
@@ -801,6 +818,9 @@ export function PkViewer() {
           {loadState.status === "ready" ? (
             <>
               <SourceSummary data={loadState.data} />
+              {loadState.data.modelReference ? (
+                <ReferenceModelNotice reference={loadState.data.modelReference} />
+              ) : null}
               <OfficialSummary data={loadState.data} />
               <ParameterTable candidate={selectedCandidate} />
               <FormulaBlock candidate={selectedCandidate} series={series} />
@@ -1087,6 +1107,36 @@ function MetricStrip({
   );
 }
 
+function ReferenceModelNotice({
+  reference,
+  compact = false,
+}: {
+  reference: NonNullable<ParsePmdaResult["modelReference"]>;
+  compact?: boolean;
+}) {
+  return (
+    <div className="model-explain" aria-label="参考モデルの出典と条件">
+      <strong>{reference.title}</strong>
+      <p>{reference.concentrationLabel}。{reference.studyCondition}</p>
+      <p className="warning-copy">
+        ピーク値・時刻に合わせた教育用近似で、曝露量（AUC）は再現しません。
+      </p>
+      {compact ? null : (
+        <>
+          <p>{reference.formulationNote}</p>
+          <p>{reference.doseNote}</p>
+          <p className="warning-copy">{reference.limitations}</p>
+          <p>
+            <a href={reference.sourceUrl} target="_blank" rel="noreferrer">
+              {reference.sourceLabel}
+            </a>
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
 function ConcentrationChart({
   cmax,
   cmaxUnit,
@@ -1142,7 +1192,7 @@ function ConcentrationChart({
               stroke="#dfe7e3"
             />
             <text x={padding.left - 12} y={y(tick) + 4} textAnchor="end" className="chart-tick">
-              {tick.toFixed(0)}
+              {tick.toFixed(maxConcentration < 10 ? 2 : 0)}
             </text>
           </g>
         ))}
@@ -1301,7 +1351,7 @@ function ParameterTable({ candidate }: { candidate: PkCandidate | null }) {
 
   const rows = [
     ["投与量", candidate.dose || "-"],
-    ["AUC", formatParameter(candidate.auc)],
+    [candidate.allowSlowAbsorption ? "AUC（実測参照）" : "AUC", formatParameter(candidate.auc)],
     ["tmax", formatParameter(candidate.tmax)],
     ["Cmax", formatParameter(candidate.cmax)],
     ["t1/2", formatParameter(candidate.halfLife)],
@@ -1367,7 +1417,7 @@ function FormulaBlock({
           </span>
           <span>=</span>
           <span>
-            F · S · (e<sup>-k<sub>e</sub>t</sup> - e<sup>-k<sub>a</sub>t</sup>)
+            F · S · |e<sup>-k<sub>e</sub>t</sup> - e<sup>-k<sub>a</sub>t</sup>|
           </span>
         </div>
         <div className="equation">
@@ -1386,6 +1436,7 @@ function FormulaBlock({
         </div>
         <p className="math-note">
           Fは1回量倍率、SはCmaxに合わせる補正係数、d_iは各服用時刻です。時刻ゆらぎがある場合、d_iは日ごとに固定乱数で少し変わります。
+          ka=keでは差の極限形 ke·t·exp(-ke·t) をCmaxに合わせます。AUCは補正に使いません。
         </p>
       </div>
       {candidate && firstResult ? (

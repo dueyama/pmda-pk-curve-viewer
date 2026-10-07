@@ -15,6 +15,8 @@ export type PkCandidate = {
   tmax: NumericParameter | null;
   halfLife: NumericParameter | null;
   auc: NumericParameter | null;
+  // 出典条件を確認した参考モデルでだけ、ka < ke の形状推定を許可する。
+  allowSlowAbsorption?: boolean;
 };
 
 export type ParsePmdaResult = {
@@ -29,6 +31,16 @@ export type ParsePmdaResult = {
   mechanismText: string;
   dosageText: string;
   candidates: PkCandidate[];
+  modelReference?: {
+    title: string;
+    concentrationLabel: string;
+    studyCondition: string;
+    formulationNote: string;
+    doseNote: string;
+    limitations: string;
+    sourceUrl: string;
+    sourceLabel: string;
+  };
   notes: {
     title: string;
     text: string;

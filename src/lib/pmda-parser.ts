@@ -1,5 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
 import { unzipSync } from "fflate";
+import { addSampleReference } from "./sample-reference";
 import type { NumericParameter, ParsePmdaResult, PkCandidate } from "./types";
 
 type XmlNode = string | number | boolean | null | XmlObject | XmlNode[];
@@ -70,7 +71,7 @@ export function parsePmdaXml(xmlText: string, sourceUrl: string): ParsePmdaResul
   const candidates =
     tableCandidates.length > 0 ? tableCandidates : extractNarrativeCandidates(bloodLevel);
 
-  return {
+  return addSampleReference({
     sourceUrl,
     packageInsertNo: textOf(root.PackageInsertNo),
     companyIdentifier: textOf(root.CompanyIdentifier),
@@ -83,7 +84,7 @@ export function parsePmdaXml(xmlText: string, sourceUrl: string): ParsePmdaResul
     dosageText: extractDosageText(root),
     candidates,
     notes: extractNotes(pharmacokinetics),
-  };
+  });
 }
 
 function collectTables(node: XmlNode, context: string[]): ExtractedTable[] {
