@@ -20,6 +20,9 @@ export function simulateCandidate(
   doseMultiplier = 1,
   timingJitterHours = 0,
 ): SimulationResult | null {
+  if (candidate.modelExclusionReason) {
+    return null;
+  }
   const cmax = candidate.cmax?.mean;
   const tmax = hoursFromParameter(candidate.tmax);
   const halfLife = hoursFromParameter(candidate.halfLife);

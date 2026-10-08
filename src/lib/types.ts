@@ -15,6 +15,7 @@ export type PkCandidate = {
   tmax: NumericParameter | null;
   halfLife: NumericParameter | null;
   auc: NumericParameter | null;
+  modelExclusionReason?: string;
   // 出典条件を確認した参考モデルでだけ、ka < ke の形状推定を許可する。
   allowSlowAbsorption?: boolean;
 };

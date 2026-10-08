@@ -202,6 +202,9 @@ function extractCandidates(tables: ExtractedTable[]): PkCandidate[] {
         tmax,
         halfLife,
         auc: indexes.auc >= 0 ? parameterFrom(row[indexes.auc], headers[indexes.auc]) : null,
+        ...(/(?:反復|連続)投与|定常状態/.test([...table.context, table.caption, ...row].join(" "))
+          ? { modelExclusionReason: "反復投与・定常状態の値は単回投与のCmaxとして使えないため、曲線計算の対象外です。" }
+          : {}),
       });
     });
   });

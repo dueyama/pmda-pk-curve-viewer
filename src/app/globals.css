@@ -1526,3 +1526,29 @@ h1 {
     max-width: none;
   }
 }
+
+.print-actions { display: flex; gap: 12px; justify-content: flex-end; }
+.print-actions button { padding: 10px 16px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; }
+.print-summary { display: none; }
+.print-view > :not(.print-actions):not(.print-summary):not(.workspace-grid) { display: none; }
+.print-view .print-summary { display: block; padding: 24px; background: white; border-radius: 12px; }
+.print-view .workspace-grid { display: block; }
+.print-view .control-panel { display: none; }
+.print-view .chart-panel, .print-view .detail-panel { margin-top: 20px; }
+.print-summary h1 { overflow-wrap: anywhere; }
+@media print {
+  @page { size: A4; margin: 14mm; }
+  body { background: white; color: black; }
+  .app-shell { max-width: none; padding: 0; }
+  .app-shell > :not(.print-summary):not(.workspace-grid) { display: none !important; }
+  .print-summary { display: block; }
+  .workspace-grid { display: block; }
+  .control-panel { display: none; }
+  .chart-panel, .detail-panel { margin-top: 16px; padding: 12px; box-shadow: none; }
+  .chart-panel { break-inside: avoid; }
+  .detail-panel { overflow: visible; }
+  .print-summary, .chart-panel, .detail-panel { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .detail-panel details { display: none; }
+  a { overflow-wrap: anywhere; }
+}
+.print-summary h1 { font-size: 28px; line-height: 1.4; margin-bottom: 12px; }

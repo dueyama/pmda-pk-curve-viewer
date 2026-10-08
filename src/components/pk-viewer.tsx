@@ -457,11 +457,13 @@ export function PkViewer() {
   const [selectedId, setSelectedId] = useState("");
   const [regimens, setRegimens] = useState<Regimen[]>(() => buildRegimens(""));
   const [showComparison, setShowComparison] = useState(false);
+  const [printView, setPrintView] = useState(false);
   const [loadState, setLoadState] = useState<LoadState>({ status: "idle" });
 
   const candidates = loadState.status === "ready" ? loadState.data.candidates : [];
   const selectedCandidate =
-    candidates.find((candidate) => candidate.id === selectedId) ?? candidates[0] ?? null;
+    candidates.find((candidate) => candidate.id === selectedId && !candidate.modelExclusionReason) ??
+    candidates.find((candidate) => !candidate.modelExclusionReason) ?? null;
   const visibleRegimens = useMemo(
     () => (showComparison ? regimens : regimens.filter((regimen) => regimen.id === "standard")),
     [regimens, showComparison],
@@ -524,7 +526,7 @@ export function PkViewer() {
       const data = payload as ParsePmdaResult;
       await waitForMinimumProgress(startedAt);
       setLoadState({ status: "ready", data });
-      setSelectedId(data.candidates[0]?.id ?? "");
+      setSelectedId(data.candidates.find((candidate) => !candidate.modelExclusionReason)?.id ?? "");
       setRegimens(buildRegimens(data.dosageText));
       setShowComparison(false);
     } catch (error) {
@@ -567,7 +569,30 @@ export function PkViewer() {
   }
 
   return (
-    <main className="app-shell">
+    <main className={`app-shell${printView ? " print-view" : ""}`}>
+      <div className="print-actions">
+        {printView ? (
+          <>
+            <button type="button" onClick={() => setPrintView(false)}>ツールに戻る</button>
+            <button type="button" onClick={() => window.print()}>この結果を印刷</button>
+          </>
+        ) : (
+          <button type="button" disabled={!selectedCandidate} onClick={() => setPrintView(true)}>選んだ薬の印刷ページ</button>
+        )}
+      </div>
+      {loadState.status === "ready" && selectedCandidate && (
+        <section className="print-summary">
+          <h1>{loadState.data.productNames.join(" / ")}</h1>
+          <p>薬物動態カーブビューア・解析結果（教育用概算）</p>
+          <strong>医療判断・服薬指示・用量調整には使えません。</strong>
+          <p>投与条件: {selectedCandidate.label} ／ 表示日数: {days}日</p>
+          {visibleRegimens.map((regimen) => (
+            <p key={regimen.id}>{regimen.name}: 時刻 {regimen.times} ／ 1回量倍率 {regimen.doseMultiplier} ／ 時刻ゆらぎ ±{regimen.timingJitterHours}時間</p>
+          ))}
+          <p>1回量倍率は線形比例、反復投与は単回曲線の加算という簡略仮定です。個人予測や服用方法の提案ではありません。</p>
+          <DosageBox data={loadState.data} />
+        </section>
+      )}
       <section className="hero-panel" aria-labelledby="app-title">
         <div className="brand-row">
           <div className="brand-mark" aria-hidden="true">
@@ -668,19 +693,25 @@ export function PkViewer() {
             <select
               value={selectedCandidate?.id ?? ""}
               onChange={(event) => setSelectedId(event.target.value)}
-              disabled={candidates.length === 0}
+              disabled={!selectedCandidate}
             >
               {candidates.length === 0 ? (
                 <option>PMDA XMLを解析してください</option>
               ) : (
                 candidates.map((candidate) => (
-                  <option key={candidate.id} value={candidate.id}>
-                    {candidate.label}
+                  <option key={candidate.id} value={candidate.id} disabled={!!candidate.modelExclusionReason}>
+                    {candidate.label}{candidate.modelExclusionReason ? "（計算対象外）" : ""}
                   </option>
                 ))
               )}
             </select>
           </label>
+
+          {candidates.some((candidate) => candidate.modelExclusionReason) && (
+            <p role="note">
+              反復投与・定常状態の候補は計算対象外です。蓄積を含む値を単回投与のCmaxとして使うと、さらに反復加算してしまうため曲線を描きません。
+            </p>
+          )}
 
           <label className="compare-toggle">
             <input
