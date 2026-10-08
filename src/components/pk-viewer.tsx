@@ -570,16 +570,12 @@ export function PkViewer() {
 
   return (
     <main className={`app-shell${printView ? " print-view" : ""}`}>
-      <div className="print-actions">
-        {printView ? (
-          <>
-            <button type="button" onClick={() => setPrintView(false)}>ツールに戻る</button>
-            <button type="button" onClick={() => window.print()}>この結果を印刷</button>
-          </>
-        ) : (
-          <button type="button" disabled={!selectedCandidate} onClick={() => setPrintView(true)}>選んだ薬の印刷ページ</button>
-        )}
-      </div>
+      {printView && (
+        <div className="print-actions">
+          <button type="button" onClick={() => setPrintView(false)}>ツールに戻る</button>
+          <button type="button" onClick={() => window.print()}>この結果を印刷</button>
+        </div>
+      )}
       {loadState.status === "ready" && selectedCandidate && (
         <section className="print-summary">
           <h1>{loadState.data.productNames.join(" / ")}</h1>
@@ -814,6 +810,13 @@ export function PkViewer() {
             </div>
             <MetricStrip candidate={selectedCandidate} series={series} />
           </div>
+
+          {!printView && (
+            <div className="chart-print-actions">
+              <button type="button" disabled={series.length === 0} onClick={() => { setPrintView(true); window.scrollTo({ top: 0 }); }}>選んだ薬の印刷ページ</button>
+              <button type="button" disabled={series.length === 0} onClick={() => window.print()}>この結果を印刷</button>
+            </div>
+          )}
 
           {loadState.status === "ready" && loadState.data.modelReference ? (
             <ReferenceModelNotice reference={loadState.data.modelReference} compact />
@@ -1255,17 +1258,6 @@ function ConcentrationChart({
                 strokeDasharray="4 8"
                 opacity="0.22"
               />
-              {dose.hour < 24 ? (
-                <text
-                  x={x(dose.hour)}
-                  y={item.id === "compare" ? 16 : 32}
-                  textAnchor="middle"
-                  className="dose-label"
-                  style={{ fill: item.color }}
-                >
-                  {item.id === "standard" ? "標" : "比"} {dose.label}
-                </text>
-              ) : null}
             </g>
           )),
         )}
@@ -1316,10 +1308,13 @@ function ConcentrationChart({
 
       <div className="chart-legend">
         {series.map((item) => (
-          <span key={item.id}>
-            <i style={{ background: item.color }} />
-            {item.name} peak {item.result.peak.toFixed(1)}
-          </span>
+          <div className="chart-legend-item" key={item.id}>
+            <span>
+              <i style={{ background: item.color }} />
+              {item.name} peak {item.result.peak.toFixed(1)}
+            </span>
+            <small>初日の時刻: {item.result.doses.filter((dose) => dose.hour < 24).map((dose) => dose.label).join("、") || "該当なし"}</small>
+          </div>
         ))}
       </div>
     </div>

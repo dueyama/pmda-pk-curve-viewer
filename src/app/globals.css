@@ -1061,18 +1061,14 @@ h1 {
   width: 8px;
 }
 
+.chart-legend-item { display: grid; gap: 4px; min-width: 0; max-width: 100%; }
+.chart-legend-item small { color: var(--muted); font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; }
+
 .chart-tick,
-.dose-label,
 .cmax-label {
   fill: #6f817a;
   font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   font-size: 12px;
-}
-
-.dose-label {
-  fill: var(--amber);
-  font-size: 11px;
-  font-weight: 800;
 }
 
 .cmax-label {
@@ -1527,8 +1523,9 @@ h1 {
   }
 }
 
-.print-actions { display: flex; gap: 12px; justify-content: flex-end; }
-.print-actions button { padding: 10px 16px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; }
+.print-actions { display: flex; gap: 12px; justify-content: flex-end; position: sticky; top: 12px; z-index: 10; padding: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+.print-actions button, .chart-print-actions button { padding: 10px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); cursor: pointer; }
+.chart-print-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-bottom: 14px; }
 .print-summary, .print-dosage { display: none; }
 .print-view > :not(.print-actions):not(.print-summary):not(.workspace-grid) { display: none; }
 .print-view { max-width: 210mm; padding: 14mm; font-size: 10pt; line-height: 1.4; }
@@ -1553,6 +1550,7 @@ h1 {
 .print-view .chart-wrap svg { max-height: 85mm; }
 .print-view .chart-legend { gap: 2mm; margin-top: 2mm; }
 .print-view .chart-legend span { min-height: 0; padding: 1mm 2mm; font-size: 9pt; }
+.print-view .chart-legend-item small { font-size: 9pt; }
 .print-summary h1 { overflow-wrap: anywhere; }
 @media screen and (max-width: 600px) {
   .print-view { padding: 14px; }
@@ -1564,6 +1562,7 @@ h1 {
   html, body { background: white; color: black; }
   .app-shell { max-width: none; min-height: 0; padding: 0; font-size: 10pt; line-height: 1.4; }
   .app-shell > :not(.print-summary):not(.workspace-grid) { display: none !important; }
+  .chart-print-actions { display: none !important; }
   .app-shell .print-summary { display: block; padding: 0; border-radius: 0; break-after: avoid; }
   .app-shell .print-summary h1 { font-size: 18pt; line-height: 1.3; margin: 0 0 2mm; }
   .app-shell .print-summary p { font-size: 10pt; line-height: 1.4; margin: 1.5mm 0; }
@@ -1584,6 +1583,7 @@ h1 {
   .chart-wrap svg { max-height: 85mm; }
   .chart-legend { gap: 2mm; margin-top: 2mm; }
   .chart-legend span { min-height: 0; padding: 1mm 2mm; font-size: 9pt; }
+  .chart-legend-item small { font-size: 9pt; }
   .detail-panel { overflow: visible; break-inside: auto; }
   .print-summary, .chart-panel, .detail-panel { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
   .detail-panel details { display: none; }
