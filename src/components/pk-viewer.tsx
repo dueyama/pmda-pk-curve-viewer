@@ -32,7 +32,7 @@ const EXAMPLE_DRUGS = [
     category: "解熱鎮痛薬",
     name: "カロナール",
     description: "アセトアミノフェン製剤の例。血中濃度表は2段ヘッダーから読み取ります。",
-    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/172190_1141007F1063_5_06",
+    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/172190_1141007F1063_5_07",
   },
   {
     group: "short",
@@ -116,7 +116,7 @@ const EXAMPLE_DRUGS = [
     category: "降圧薬",
     name: "アムロジピン",
     description: "Ca拮抗薬の例。半減期が長く、1日1回型で残り方を見やすい薬です。",
-    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/530113_2171022F3080_2_18",
+    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/530113_2171022F3080_2_19",
   },
   {
     group: "steady",
@@ -137,7 +137,7 @@ const EXAMPLE_DRUGS = [
     category: "アレルギー薬",
     name: "アレロック",
     description: "抗アレルギー薬の例。眠気注意の文脈も添文から確認します。",
-    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/230124_4490025F3026_1_09",
+    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/230124_4490025F3026_1_10",
   },
   {
     group: "steady",
@@ -221,14 +221,14 @@ const EXAMPLE_DRUGS = [
     category: "抗精神病薬",
     name: "オランザピン",
     description: "半減期が長めの例。1日1回型で体内に残る感じを見やすい薬です。",
-    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/480235_1179044F4109_1_12",
+    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/480235_1179044F4109_1_13",
   },
   {
     group: "steady",
     category: "抗精神病薬",
     name: "アリピプラゾール",
     description: "かなり長めに残る例。定常状態へ近づくまでの遅さを見やすい薬です。",
-    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/530100_1179045B1072_1_15",
+    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/530100_1179045B1072_1_16",
   },
   {
     group: "steady",

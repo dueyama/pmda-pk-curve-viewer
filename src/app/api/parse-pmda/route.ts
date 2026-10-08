@@ -23,7 +23,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = parsePmdaZip(await response.arrayBuffer(), url.toString());
+    const data = await response.arrayBuffer();
+    const signature = new Uint8Array(data, 0, Math.min(data.byteLength, 4));
+    // PMDAは失効したURLでもHTTP 200のHTMLを返す。Content-TypeではなくZIPの実体を確認する。
+    if (signature[0] !== 0x50 || signature[1] !== 0x4b || signature[2] !== 0x03 || signature[3] !== 0x04) {
+      return NextResponse.json(
+        { error: "PMDAからXMLデータセットを取得できませんでした。URLが更新・失効している可能性があります。PMDA添文ページで最新のXML URLを確認してください。" },
+        { status: 502 },
+      );
+    }
+
+    const result = parsePmdaZip(data, url.toString());
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(
