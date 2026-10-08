@@ -1529,24 +1529,62 @@ h1 {
 
 .print-actions { display: flex; gap: 12px; justify-content: flex-end; }
 .print-actions button { padding: 10px 16px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; }
-.print-summary { display: none; }
+.print-summary, .print-dosage { display: none; }
 .print-view > :not(.print-actions):not(.print-summary):not(.workspace-grid) { display: none; }
-.print-view .print-summary { display: block; padding: 24px; background: white; border-radius: 12px; }
+.print-view { max-width: 210mm; padding: 14mm; font-size: 10pt; line-height: 1.4; }
+.print-view .print-summary { display: block; padding: 0; background: white; border-radius: 0; }
+.print-view .print-summary h1 { font-size: 18pt; line-height: 1.3; margin: 0 0 2mm; }
+.print-view .print-summary p { margin: 1.5mm 0; font-size: 10pt; line-height: 1.4; }
+.print-view .print-summary strong { font-size: 10pt; }
+.print-view .print-dosage { display: block; }
 .print-view .workspace-grid { display: block; }
 .print-view .control-panel { display: none; }
-.print-view .chart-panel, .print-view .detail-panel { margin-top: 20px; }
+.print-view .chart-panel, .print-view .detail-panel { margin-top: 3mm; padding: 3mm; }
+.print-view .workspace-grid { margin-top: 3mm; }
+.print-view .chart-panel { margin-top: 0; }
+.print-view .chart-header { display: flex; gap: 3mm; margin-bottom: 3mm; }
+.print-view .chart-header h2, .print-view .section-heading h2 { font-size: 13pt; }
+.print-view .metric-strip { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1.5mm; max-width: 116mm; }
+.print-view .metric-strip div { padding: 1.5mm; }
+.print-view .metric-strip span { font-size: 8pt; margin-bottom: 1mm; }
+.print-view .metric-strip strong { font-size: 9pt; }
+.print-view .chart-panel .model-explain { padding: 2mm; margin-bottom: 2mm; }
+.print-view .chart-panel .model-explain p, .print-view .chart-panel > .warning-copy { font-size: 9pt; line-height: 1.4; margin: 1mm 0 !important; }
+.print-view .chart-wrap svg { max-height: 85mm; }
+.print-view .chart-legend { gap: 2mm; margin-top: 2mm; }
+.print-view .chart-legend span { min-height: 0; padding: 1mm 2mm; font-size: 9pt; }
 .print-summary h1 { overflow-wrap: anywhere; }
+@media screen and (max-width: 600px) {
+  .print-view { padding: 14px; }
+  .print-view .chart-header { display: grid; }
+  .print-view .metric-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: none; }
+}
 @media print {
   @page { size: A4; margin: 14mm; }
-  body { background: white; color: black; }
-  .app-shell { max-width: none; padding: 0; }
+  html, body { background: white; color: black; }
+  .app-shell { max-width: none; min-height: 0; padding: 0; font-size: 10pt; line-height: 1.4; }
   .app-shell > :not(.print-summary):not(.workspace-grid) { display: none !important; }
-  .print-summary { display: block; }
-  .workspace-grid { display: block; }
+  .app-shell .print-summary { display: block; padding: 0; border-radius: 0; break-after: avoid; }
+  .app-shell .print-summary h1 { font-size: 18pt; line-height: 1.3; margin: 0 0 2mm; }
+  .app-shell .print-summary p { font-size: 10pt; line-height: 1.4; margin: 1.5mm 0; }
+  .app-shell .print-summary strong { font-size: 10pt; }
+  .print-dosage { display: block; }
+  .app-shell .workspace-grid { display: block; margin-top: 3mm; }
   .control-panel { display: none; }
-  .chart-panel, .detail-panel { margin-top: 16px; padding: 12px; box-shadow: none; }
-  .chart-panel { break-inside: avoid; }
-  .detail-panel { overflow: visible; }
+  .app-shell .chart-panel, .app-shell .detail-panel { margin-top: 3mm; padding: 3mm; box-shadow: none; }
+  .app-shell .chart-panel { margin-top: 0; break-inside: avoid; }
+  .chart-header { display: flex; gap: 3mm; margin-bottom: 3mm; }
+  .chart-header h2, .section-heading h2 { font-size: 13pt; }
+  .metric-strip { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1.5mm; max-width: 116mm; }
+  .metric-strip div { padding: 1.5mm; }
+  .metric-strip span { font-size: 8pt; margin-bottom: 1mm; }
+  .metric-strip strong { font-size: 9pt; }
+  .chart-panel .model-explain { padding: 2mm; margin-bottom: 2mm; }
+  .chart-panel .model-explain p, .chart-panel > .warning-copy { font-size: 9pt; line-height: 1.4; margin: 1mm 0 !important; }
+  .chart-wrap svg { max-height: 85mm; }
+  .chart-legend { gap: 2mm; margin-top: 2mm; }
+  .chart-legend span { min-height: 0; padding: 1mm 2mm; font-size: 9pt; }
+  .detail-panel { overflow: visible; break-inside: auto; }
   .print-summary, .chart-panel, .detail-panel { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
   .detail-panel details { display: none; }
   a { overflow-wrap: anywhere; }

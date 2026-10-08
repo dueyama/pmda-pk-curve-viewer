@@ -590,7 +590,6 @@ export function PkViewer() {
             <p key={regimen.id}>{regimen.name}: 時刻 {regimen.times} ／ 1回量倍率 {regimen.doseMultiplier} ／ 時刻ゆらぎ ±{regimen.timingJitterHours}時間</p>
           ))}
           <p>1回量倍率は線形比例、反復投与は単回曲線の加算という簡略仮定です。個人予測や服用方法の提案ではありません。</p>
-          <DosageBox data={loadState.data} />
         </section>
       )}
       <section className="hero-panel" aria-labelledby="app-title">
@@ -848,6 +847,7 @@ export function PkViewer() {
 
           {loadState.status === "ready" ? (
             <>
+              <div className="print-dosage"><DosageBox data={loadState.data} /></div>
               <SourceSummary data={loadState.data} />
               {loadState.data.modelReference ? (
                 <ReferenceModelNotice reference={loadState.data.modelReference} />
