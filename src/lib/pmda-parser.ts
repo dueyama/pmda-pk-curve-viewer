@@ -57,19 +57,17 @@ export function parsePmdaXml(xmlText: string, sourceUrl: string): ParsePmdaResul
   }
 
   const pharmacokinetics = asObject(root.Pharmacokinetics);
-  if (!pharmacokinetics) {
-    throw new Error("16.薬物動態セクションが見つかりませんでした。");
-  }
+  const bloodLevel = asObject(pharmacokinetics?.BloodLevel);
 
-  const bloodLevel = asObject(pharmacokinetics.BloodLevel);
-  if (!bloodLevel) {
-    throw new Error("16.1 血中濃度セクションが見つかりませんでした。");
-  }
-
-  const tables = collectTables(bloodLevel, []);
+  const tables = bloodLevel ? collectTables(bloodLevel, []) : [];
   const tableCandidates = extractCandidates(tables);
   const candidates =
-    tableCandidates.length > 0 ? tableCandidates : extractNarrativeCandidates(bloodLevel);
+    tableCandidates.length > 0 ? tableCandidates : bloodLevel ? extractNarrativeCandidates(bloodLevel) : [];
+  const curveUnavailableReason = !pharmacokinetics
+    ? "この電子添文には16.薬物動態の記載がなく、曲線の計算に必要な値を取得できません。"
+    : !bloodLevel
+      ? "この電子添文には16.1 血中濃度の記載がなく、曲線の計算に必要な値を取得できません。"
+      : "Cmax・tmax・t1/2がそろった投与条件を、この電子添文から抽出できませんでした。";
 
   return addSampleReference({
     sourceUrl,
@@ -83,7 +81,8 @@ export function parsePmdaXml(xmlText: string, sourceUrl: string): ParsePmdaResul
     mechanismText: officialText(asObject(root.EfficacyPharmacology)?.MechanismOfAction),
     dosageText: extractDosageText(root),
     candidates,
-    notes: extractNotes(pharmacokinetics),
+    ...(candidates.length === 0 ? { curveUnavailableReason } : {}),
+    notes: extractNotes(pharmacokinetics ?? {}),
   });
 }
 
@@ -184,7 +183,7 @@ function extractCandidates(tables: ExtractedTable[]): PkCandidate[] {
       );
       const dose = doseIndex >= 0 ? row[doseIndex] ?? "" : "";
       const cmax = parameterFrom(row[indexes.cmax], headers[indexes.cmax]);
-      const tmax = parameterFrom(row[indexes.tmax], headers[indexes.tmax]);
+      const tmax = parameterFrom(row[indexes.tmax], headers[indexes.tmax], true);
       const halfLife = parameterFrom(row[indexes.halfLife], headers[indexes.halfLife]);
 
       if (!cmax?.mean || !tmax?.mean || !halfLife?.mean) {
@@ -362,8 +361,20 @@ function guessDoseIndex(indexes: Record<keyof typeof PARAMETER_KEYS, number>): n
   return indexes.cmax > 0 ? 0 : -1;
 }
 
-function parameterFrom(value: string | undefined, header: string): NumericParameter | null {
+function parameterFrom(value: string | undefined, header: string, useRangeMidpoint = false): NumericParameter | null {
   const raw = normalizeText(value ?? "");
+  const unit = extractUnit(header);
+  // tmaxが範囲で示された場合、下限を平均値として扱わず、中間値という近似を明記する。
+  const range = useRangeMidpoint ? raw.match(/^(\d+(?:\.\d+)?)\s*[～〜~]\s*(\d+(?:\.\d+)?)$/) : null;
+  if (range) {
+    const lower = Number(range[1]);
+    const upper = Number(range[2]);
+    if (lower <= 0 || upper < lower) {
+      return null;
+    }
+    const midpoint = (lower + upper) / 2;
+    return { raw, mean: midpoint, unit, calculationNote: `範囲の中間値${midpoint}${unit ? ` ${unit}` : ""}で計算` };
+  }
   const mean = parseMean(raw);
   if (mean === null) {
     return null;
@@ -372,7 +383,7 @@ function parameterFrom(value: string | undefined, header: string): NumericParame
   return {
     raw,
     mean,
-    unit: extractUnit(header),
+    unit,
   };
 }
 

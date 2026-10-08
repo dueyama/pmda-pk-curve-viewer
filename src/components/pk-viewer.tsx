@@ -3,7 +3,8 @@
 import Image from "next/image";
 import { FormEvent, useCallback, useMemo, useState } from "react";
 import { simulateCandidate } from "@/lib/pk-model";
-import { MEIACT_XML_URL } from "@/lib/sample-reference";
+import { inferDailyFrequency } from "@/lib/regimen";
+import { CLARIS_XML_URL, MEIACT_XML_URL } from "@/lib/sample-reference";
 import type { ModelPoint, ParsePmdaResult, PkCandidate, SimulationResult } from "@/lib/types";
 
 const SAMPLE_URL =
@@ -12,13 +13,63 @@ const SAMPLE_URL =
 const MAX_DISPLAY_DAYS = 60;
 const MIN_PROGRESS_MS = 650;
 
-const EXAMPLE_DRUGS = [
+type ExampleDrug = {
+  group: "short" | "steady" | "monitoring" | "information";
+  category: string;
+  name: string;
+  printName?: string;
+  description: string;
+  url: string;
+  genericProduct?: { name: string; sourceUrl: string };
+  curveNotice?: string;
+};
+
+const EXAMPLE_DRUGS: readonly ExampleDrug[] = [
   {
     group: "short",
     category: "抗菌薬",
     name: "メイアクトMS錠100mg",
     description: "成人錠剤・食後の参考例。活性体セフジトレンの血清中総濃度を眺めます。",
     url: MEIACT_XML_URL,
+    genericProduct: {
+      name: "セフジトレン ピボキシル錠100mg「OK」",
+      sourceUrl: "https://meiji-medical-net.com/product/faq/answer/ACFTN-8",
+    },
+  },
+  {
+    group: "short",
+    category: "抗菌薬",
+    name: "クラリス錠200",
+    description: "クラリスロマイシンの先発品。成人・空腹時の単回投与値（Bioassay）による参考例です。",
+    url: CLARIS_XML_URL,
+  },
+  {
+    group: "short",
+    category: "抗プラスミン薬",
+    name: "トランサミン錠250mg",
+    printName: "トランサミン",
+    description: "トラネキサム酸の先発品。錠250mgの単回投与値から濃度推移を眺めます。",
+    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/430574_3327002B1027_2_07",
+    genericProduct: {
+      name: "トラネキサム酸錠250mg「YD」",
+      sourceUrl: "https://www.pmda.go.jp/PmdaSearch/rdDetail/iyaku/3327002F1169_1?user=1",
+    },
+  },
+  {
+    group: "information",
+    category: "配合感冒剤",
+    name: "ペレックス配合顆粒",
+    description: "4成分の配合剤。添文情報は確認できますが、曲線に必要な薬物動態値の記載がありません。",
+    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/400107_1180105D1035_1_14",
+    curveNotice: "ペレックス配合顆粒の電子添文には薬物動態欄がなく、Cmax・tmax・t1/2がそろいません。配合剤全体の曲線は描かず、添文情報を表示します。",
+  },
+  {
+    group: "information",
+    category: "鎮咳・去痰薬",
+    name: "レスプレン錠20mg",
+    description: "エプラジノン塩酸塩製剤。添文情報は確認できますが、ヒトの曲線に必要な値がそろいません。",
+    url: "https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetXML/431010_2249001F1030_3_03",
+    curveNotice: "レスプレンの添文の血中濃度欄はラットの試験で、ヒトのCmax・tmax・t1/2がそろいません。動物の値や尿中回収率を血中濃度へ置き換えず、添文情報を表示します。",
   },
   {
     group: "short",
@@ -294,6 +345,9 @@ const EXAMPLE_CATEGORY_TONES: Record<string, ExampleTone> = {
   ED治療薬: "acute",
   抗炎症鎮痛薬: "acute",
   抗菌薬: "acute",
+  抗プラスミン薬: "acute",
+  配合感冒剤: "acute",
+  "鎮咳・去痰薬": "acute",
   睡眠薬: "acute",
   降圧薬: "chronic",
   アレルギー薬: "chronic",
@@ -325,6 +379,11 @@ const EXAMPLE_GROUPS = [
     id: "monitoring",
     title: "観察・調整型",
     description: "濃度や検査値を見ながら管理される薬。概算グラフだけで判断しない例。",
+  },
+  {
+    id: "information",
+    title: "添文情報のみ",
+    description: "曲線の計算に必要な値がそろわない例。製品名・用法・出典などを確認できます。",
   },
 ] as const;
 
@@ -464,6 +523,16 @@ export function PkViewer() {
   const selectedCandidate =
     candidates.find((candidate) => candidate.id === selectedId && !candidate.modelExclusionReason) ??
     candidates.find((candidate) => !candidate.modelExclusionReason) ?? null;
+  const parsedExample = loadState.status === "ready"
+    ? EXAMPLE_DRUGS.find((drug) => normalizePmdaExampleUrl(drug.url) === normalizePmdaExampleUrl(loadState.data.sourceUrl))
+    : undefined;
+  const curveUnavailableReason = loadState.status === "ready" && !selectedCandidate
+    ? parsedExample?.curveNotice ?? loadState.data.curveUnavailableReason ?? "単回投与として計算できる候補がありません。抽出値と出典を確認してください。"
+    : "";
+  const printProductName = loadState.status === "ready"
+    ? loadState.data.productNames.find((name) => selectedCandidate?.dose && name.endsWith(selectedCandidate.dose)) ??
+      parsedExample?.printName ?? parsedExample?.name ?? loadState.data.productNames.join(" / ")
+    : "";
   const visibleRegimens = useMemo(
     () => (showComparison ? regimens : regimens.filter((regimen) => regimen.id === "standard")),
     [regimens, showComparison],
@@ -569,23 +638,26 @@ export function PkViewer() {
   }
 
   return (
-    <main className={`app-shell${printView ? " print-view" : ""}`}>
+    <main className={`app-shell${printView ? " print-view" : ""}${loadState.status === "ready" && !selectedCandidate ? " no-curve" : ""}`}>
       {printView && (
         <div className="print-actions">
           <button type="button" onClick={() => setPrintView(false)}>ツールに戻る</button>
           <button type="button" onClick={() => window.print()}>この結果を印刷</button>
         </div>
       )}
-      {loadState.status === "ready" && selectedCandidate && (
+      {loadState.status === "ready" && (
         <section className="print-summary">
-          <h1>{loadState.data.productNames.join(" / ")}</h1>
+          <h1>{printProductName}</h1>
+          {parsedExample?.genericProduct && (
+            <p>対応する後発品: {parsedExample.genericProduct.name}。曲線は先発品の添文値による参考表示です。</p>
+          )}
           <p>薬物動態カーブビューア・解析結果（教育用概算）</p>
           <strong>医療判断・服薬指示・用量調整には使えません。</strong>
-          <p>投与条件: {selectedCandidate.label} ／ 表示日数: {days}日</p>
-          {visibleRegimens.map((regimen) => (
+          {selectedCandidate ? <p>投与条件: {selectedCandidate.label} ／ 表示日数: {days}日</p> : <p>{curveUnavailableReason}</p>}
+          {selectedCandidate && visibleRegimens.map((regimen) => (
             <p key={regimen.id}>{regimen.name}: 時刻 {regimen.times} ／ 1回量倍率 {regimen.doseMultiplier} ／ 時刻ゆらぎ ±{regimen.timingJitterHours}時間</p>
           ))}
-          <p>1回量倍率は線形比例、反復投与は単回曲線の加算という簡略仮定です。個人予測や服用方法の提案ではありません。</p>
+          {selectedCandidate && <p>1回量倍率は線形比例、反復投与は単回曲線の加算という簡略仮定です。個人予測や服用方法の提案ではありません。</p>}
         </section>
       )}
       <section className="hero-panel" aria-labelledby="app-title">
@@ -646,6 +718,8 @@ export function PkViewer() {
       <ExampleDrugStrip
         activeUrl={activeExampleUrl}
         parsedUrl={loadState.status === "ready" ? loadState.data.sourceUrl : ""}
+        hasCurve={!!selectedCandidate}
+        curveUnavailableReason={curveUnavailableReason}
         disabled={loadState.status === "loading"}
         parseStatus={
           loadState.status === "loading" || loadState.status === "error"
@@ -691,7 +765,7 @@ export function PkViewer() {
               disabled={!selectedCandidate}
             >
               {candidates.length === 0 ? (
-                <option>PMDA XMLを解析してください</option>
+                <option>{loadState.status === "ready" ? "曲線に使える投与条件がありません" : "PMDA XMLを解析してください"}</option>
               ) : (
                 candidates.map((candidate) => (
                   <option key={candidate.id} value={candidate.id} disabled={!!candidate.modelExclusionReason}>
@@ -813,8 +887,8 @@ export function PkViewer() {
 
           {!printView && (
             <div className="chart-print-actions">
-              <button type="button" disabled={series.length === 0} onClick={() => { setPrintView(true); window.scrollTo({ top: 0 }); }}>選んだ薬の印刷ページ</button>
-              <button type="button" disabled={series.length === 0} onClick={() => window.print()}>この結果を印刷</button>
+              <button type="button" disabled={loadState.status !== "ready"} onClick={() => { setPrintView(true); window.scrollTo({ top: 0 }); }}>選んだ薬の印刷ページ</button>
+              <button type="button" disabled={loadState.status !== "ready"} onClick={() => window.print()}>この結果を印刷</button>
             </div>
           )}
 
@@ -826,6 +900,9 @@ export function PkViewer() {
                 <p className="warning-copy" key={warning}>{warning}</p>
               ))
             : null}
+          {selectedCandidate?.tmax?.calculationNote && (
+            <p className="warning-copy">tmax: 添文の{selectedCandidate.tmax.raw} {selectedCandidate.tmax.unit}に対し、{selectedCandidate.tmax.calculationNote}する近似です。</p>
+          )}
 
           {series.length > 0 ? (
             <ConcentrationChart
@@ -837,7 +914,7 @@ export function PkViewer() {
           ) : (
             <div className="empty-chart">
               <GraphIcon />
-              <p>PMDA XMLを解析し、Cmax・tmax・t1/2を含む行を選ぶと濃度推移グラフが表示されます。</p>
+              <p>{curveUnavailableReason || "PMDA XMLを解析し、Cmax・tmax・t1/2を含む行を選ぶと濃度推移グラフが表示されます。"}</p>
             </div>
           )}
         </section>
@@ -857,7 +934,7 @@ export function PkViewer() {
               ) : null}
               <OfficialSummary data={loadState.data} />
               <ParameterTable candidate={selectedCandidate} />
-              <FormulaBlock candidate={selectedCandidate} series={series} />
+              {selectedCandidate && <FormulaBlock candidate={selectedCandidate} series={series} />}
               <NotesList notes={loadState.data.notes} />
             </>
           ) : (
@@ -931,6 +1008,8 @@ function ReuseNotice() {
 function ExampleDrugStrip({
   activeUrl,
   parsedUrl,
+  hasCurve,
+  curveUnavailableReason,
   disabled,
   parseStatus,
   onAnalyze,
@@ -938,6 +1017,8 @@ function ExampleDrugStrip({
 }: {
   activeUrl: string;
   parsedUrl: string;
+  hasCurve: boolean;
+  curveUnavailableReason: string;
   disabled: boolean;
   parseStatus: { status: LoadState["status"]; message?: string };
   onAnalyze: (url: string) => Promise<void>;
@@ -953,7 +1034,7 @@ function ExampleDrugStrip({
       : parseStatus.status === "error"
         ? `解析できませんでした。${parseStatus.message}`
         : isParsed
-          ? "解析済みです。下のグラフで標準用法の血中濃度推移を確認できます。"
+          ? hasCurve ? "解析済みです。下のグラフで標準用法の血中濃度推移を確認できます。" : curveUnavailableReason
           : "URLを入力欄にセットしました。解析するとPMDA XMLを取得します。";
 
   return (
@@ -961,7 +1042,7 @@ function ExampleDrugStrip({
       <div className="example-strip-header">
         <span>Examples</span>
         <p>
-          代表例は経口薬中心です。薬を選ぶとURL入力欄にXML URLをセットします。解析するとPMDA XMLを取得し、下の「血中濃度の時間推移」に曲線を表示します。
+          代表例は経口薬中心です。薬を選ぶとURL入力欄にXML URLをセットします。解析するとPMDA XMLを取得し、必要な値がそろう場合に下の「血中濃度の時間推移」に曲線を表示します。
         </p>
       </div>
       <div className="example-category-legend" aria-label="薬効カテゴリの色分け">
@@ -1006,6 +1087,7 @@ function ExampleDrugStrip({
                         {isActive ? <span className="selected-chip">選択中</span> : null}
                       </div>
                       <strong>{drug.name}</strong>
+                      {drug.genericProduct && <span className="example-card-alias">後発品: {drug.genericProduct.name}</span>}
                       <p>{drug.description}</p>
                     </button>
                   );
@@ -1027,7 +1109,7 @@ function ExampleDrugStrip({
           aria-live="polite"
         >
           <strong>{activeDrug.name}を選択中</strong>
-          <span>{isParsed ? "解析済みの曲線を表示できます。" : "カード選択だけでは取得しません。"}</span>
+          <span>{isParsed ? hasCurve ? "解析済みの曲線を表示できます。" : "解析済みです。添文情報を確認できます。" : "カード選択だけでは取得しません。"}</span>
           <button
             disabled={disabled}
             onClick={() => {
@@ -1039,7 +1121,7 @@ function ExampleDrugStrip({
             }}
             type="button"
           >
-            {disabled ? "解析中" : isParsed ? "グラフへ移動" : "この薬を解析"}
+            {disabled ? "解析中" : isParsed ? hasCurve ? "グラフへ移動" : "解析結果へ移動" : "この薬を解析"}
           </button>
           <small className="example-action-progress" role="status">
             {parseStatus.status === "loading" ? "進行中: " : ""}
@@ -1322,6 +1404,7 @@ function ConcentrationChart({
 }
 
 function SourceSummary({ data }: { data: ParsePmdaResult }) {
+  const example = EXAMPLE_DRUGS.find((drug) => normalizePmdaExampleUrl(drug.url) === normalizePmdaExampleUrl(data.sourceUrl));
   const pmdaDetailUrl = data.sourceUrl.replace(
     "/PmdaSearch/iyakuDetail/ResultDataSetXML/",
     "/PmdaSearch/iyakuDetail/",
@@ -1331,6 +1414,9 @@ function SourceSummary({ data }: { data: ParsePmdaResult }) {
     <div className="source-summary">
       <span>Source</span>
       <strong>{data.productNames.join(" / ") || "製品名未取得"}</strong>
+      {example?.genericProduct && (
+        <p>対応する後発品: {example.genericProduct.name}。曲線は先発品の添文値による参考表示で、後発品の実測値ではありません。</p>
+      )}
       <p>
         {data.packageInsertNo} {data.revision}
       </p>
@@ -1341,6 +1427,9 @@ function SourceSummary({ data }: { data: ParsePmdaResult }) {
         <a href={data.sourceUrl} target="_blank" rel="noreferrer">
           XMLデータ
         </a>
+        {example?.genericProduct && (
+          <a href={example.genericProduct.sourceUrl} target="_blank" rel="noreferrer">後発品の製品情報</a>
+        )}
       </div>
     </div>
   );
@@ -1543,7 +1632,8 @@ function GlossaryList({
 }
 
 function buildRegimens(dosageText: string): Regimen[] {
-  const frequency = getRegimenFrequency(dosageText);
+  const frequencyInfo = inferDailyFrequency(dosageText);
+  const frequency = frequencyInfo?.frequency ?? 2;
   const standardTimes = inferStandardTimes(dosageText, frequency);
   const compareRegimen =
     frequency > 1
@@ -1567,7 +1657,9 @@ function buildRegimens(dosageText: string): Regimen[] {
   return [
     {
       id: "standard",
-      name: frequency > 1 ? `標準用法（1日${frequency}回）` : "標準用法（1日1回）",
+      name: frequencyInfo?.rangeLabel
+        ? `標準用法の例（1日${frequency}回・添文は${frequencyInfo.rangeLabel}）`
+        : frequency > 1 ? `標準用法（1日${frequency}回）` : "標準用法（1日1回）",
       times: standardTimes,
       doseMultiplier: 1,
       timingJitterHours: 0,
@@ -1575,23 +1667,6 @@ function buildRegimens(dosageText: string): Regimen[] {
     },
     compareRegimen,
   ];
-}
-
-function getRegimenFrequency(dosageText: string): number {
-  return inferFrequency(dosageText) ?? 2;
-}
-
-function inferFrequency(text: string): number | null {
-  const normalized = text.replace(/[０-９]/g, (char) =>
-    String.fromCharCode(char.charCodeAt(0) - 0xfee0),
-  );
-  const match = normalized.match(/1日\s*([0-9]+)\s*回/);
-  if (!match) {
-    return null;
-  }
-
-  const frequency = Number(match[1]);
-  return Number.isFinite(frequency) && frequency > 0 ? Math.min(frequency, 6) : null;
 }
 
 function timesForFrequency(frequency: number): string {
@@ -1669,7 +1744,7 @@ function formatParameter(parameter: PkCandidate["cmax"]): string {
   if (!parameter) {
     return "-";
   }
-  return `${parameter.raw}${parameter.unit ? ` ${parameter.unit}` : ""}`;
+  return `${parameter.raw}${parameter.unit ? ` ${parameter.unit}` : ""}${parameter.calculationNote ? `（${parameter.calculationNote}）` : ""}`;
 }
 
 function clipText(value: string, maxLength: number): string {

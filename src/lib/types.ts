@@ -2,6 +2,7 @@ export type NumericParameter = {
   raw: string;
   mean: number | null;
   unit: string;
+  calculationNote?: string;
 };
 
 export type PkCandidate = {
@@ -32,6 +33,7 @@ export type ParsePmdaResult = {
   mechanismText: string;
   dosageText: string;
   candidates: PkCandidate[];
+  curveUnavailableReason?: string;
   modelReference?: {
     title: string;
     concentrationLabel: string;

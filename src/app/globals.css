@@ -601,6 +601,13 @@ h1 {
   margin: 0;
 }
 
+.example-card-alias {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
 .tone-acute {
   --tone-accent: #a05a1f;
   --tone-bg: #fff7ed;
@@ -1536,6 +1543,7 @@ h1 {
 .print-view .print-dosage { display: block; }
 .print-view .workspace-grid { display: block; }
 .print-view .control-panel { display: none; }
+.print-view.no-curve .chart-panel { display: none; }
 .print-view .chart-panel, .print-view .detail-panel { margin-top: 3mm; padding: 3mm; }
 .print-view .workspace-grid { margin-top: 3mm; }
 .print-view .chart-panel { margin-top: 0; }
@@ -1570,6 +1578,7 @@ h1 {
   .print-dosage { display: block; }
   .app-shell .workspace-grid { display: block; margin-top: 3mm; }
   .control-panel { display: none; }
+  .no-curve .chart-panel { display: none; }
   .app-shell .chart-panel, .app-shell .detail-panel { margin-top: 3mm; padding: 3mm; box-shadow: none; }
   .app-shell .chart-panel { margin-top: 0; break-inside: avoid; }
   .chart-header { display: flex; gap: 3mm; margin-bottom: 3mm; }
