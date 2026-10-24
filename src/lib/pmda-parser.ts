@@ -1,5 +1,7 @@
 import { XMLParser } from "fast-xml-parser";
-import { unzipSync } from "fflate";
+import { readPmdaXml, assertXmlLimits } from "./pmda-zip";
+import { PMDA_LIMITS } from "./pmda-limits";
+import { PmdaError } from "./pmda-errors";
 import { addSampleReference } from "./sample-reference";
 import type { NumericParameter, ParsePmdaResult, PkCandidate } from "./types";
 
@@ -33,23 +35,11 @@ const PARAMETER_KEYS = {
 };
 
 export function parsePmdaZip(buffer: ArrayBuffer, sourceUrl: string): ParsePmdaResult {
-  const bytes = new Uint8Array(buffer);
-  const files = unzipSync(bytes);
-  const xmlEntry = Object.entries(files).find(([name]) => name.endsWith(".xml"));
-
-  if (!xmlEntry) {
-    throw new Error("XMLファイルがZIP内に見つかりませんでした。");
-  }
-
-  const xmlText = new TextDecoder("utf-8")
-    .decode(xmlEntry[1])
-    .replace(/^\uFEFF/, "")
-    .replace(/<\?enter\?>/g, "\n");
-
-  return parsePmdaXml(xmlText, sourceUrl);
+  return parsePmdaXml(readPmdaXml(buffer), sourceUrl);
 }
 
 export function parsePmdaXml(xmlText: string, sourceUrl: string): ParsePmdaResult {
+  assertXmlLimits(xmlText);
   const parsed = XML_PARSER.parse(xmlText) as { PackIns?: XmlObject };
   const root = parsed.PackIns;
   if (!root) {
@@ -86,9 +76,9 @@ export function parsePmdaXml(xmlText: string, sourceUrl: string): ParsePmdaResul
   });
 }
 
-function collectTables(node: XmlNode, context: string[]): ExtractedTable[] {
+function collectTables(node: XmlNode, context: string[], budget = { cells: 0, bytes: 0 }): ExtractedTable[] {
   if (Array.isArray(node)) {
-    return node.flatMap((child) => collectTables(child, context));
+    return node.flatMap((child) => collectTables(child, context, budget));
   }
 
   const object = asObject(node);
@@ -105,19 +95,20 @@ function collectTables(node: XmlNode, context: string[]): ExtractedTable[] {
   const ownTables = asArray(object.TblBlock).map((block) => ({
     caption: textOf(asObject(block)?.TblCaption),
     context: nextContext,
-    rows: tableRows(block),
+    rows: tableRows(block, budget),
   }));
 
   const childTables = Object.entries(object)
     .filter(([key]) => !key.startsWith("@_") && key !== "Header" && key !== "TblBlock")
-    .flatMap(([, value]) => (value === undefined ? [] : collectTables(value, nextContext)));
+    .flatMap(([, value]) => (value === undefined ? [] : collectTables(value, nextContext, budget)));
 
   return [...ownTables, ...childTables];
 }
 
-function tableRows(block: XmlNode): string[][] {
+function tableRows(block: XmlNode, budget: { cells: number; bytes: number }): string[][] {
   const table = asObject(asObject(block)?.SimpleTable);
   const rows = asArray(table?.SimpTblRow);
+  if (rows.length > PMDA_LIMITS.tableRows) throw new PmdaError("DATA_TOO_LARGE");
   const spans = new Map<number, { text: string; remaining: number }>();
 
   return rows.map((row) => {
@@ -131,6 +122,7 @@ function tableRows(block: XmlNode): string[][] {
         if (!span) {
           break;
         }
+        chargeTableCell(budget, span.text);
         values[column] = span.text;
         span.remaining -= 1;
         if (span.remaining <= 0) {
@@ -146,8 +138,13 @@ function tableRows(block: XmlNode): string[][] {
       const text = normalizeText(textOf(object));
       const colspan = numberAttribute(object, "@_cspan") ?? 1;
       const rowspan = numberAttribute(object, "@_rspan") ?? 1;
+      if (!Number.isSafeInteger(colspan) || !Number.isSafeInteger(rowspan) ||
+          colspan < 1 || rowspan < 1 || colspan > PMDA_LIMITS.tableSpan || rowspan > PMDA_LIMITS.tableRows) {
+        throw new PmdaError("DATA_TOO_LARGE");
+      }
 
       for (let index = 0; index < colspan; index += 1) {
+        chargeTableCell(budget, text);
         values[column + index] = text;
         if (rowspan > 1) {
           spans.set(column + index, { text, remaining: rowspan - 1 });
@@ -159,6 +156,14 @@ function tableRows(block: XmlNode): string[][] {
     fillSpans();
     return values;
   });
+}
+
+function chargeTableCell(budget: { cells: number; bytes: number }, text: string): void {
+  budget.cells++;
+  budget.bytes += Buffer.byteLength(text, "utf8");
+  if (budget.cells > PMDA_LIMITS.expandedTableCells || budget.bytes > PMDA_LIMITS.expandedTableBytes) {
+    throw new PmdaError("DATA_TOO_LARGE");
+  }
 }
 
 function extractCandidates(tables: ExtractedTable[]): PkCandidate[] {
