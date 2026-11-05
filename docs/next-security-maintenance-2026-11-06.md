@@ -2,7 +2,7 @@
 
 ## 状態と範囲
 
-- **公開前検証合格**。ローカル更新とCLI/HTTP検証に続き、正式な既存Chrome接続で実ブラウザ検証を完了。承認済みの通常commit/push・既存production配備へ進む。配備結果は下記へ追記する。
+- **本番反映・正常確認済み**。ローカル更新とCLI/HTTP検証に続き、正式な既存Chrome接続で実ブラウザ検証を完了。通常commit/push・既存production配備と公開URLの正常操作を確認。具体的結果は下記。
 - 本人の「Next.jsやっておこう。指示していって。」を依頼元 `01a15de3-3dc1-762c-aa6f-825772541036` から受領。通常commit/pushと既存URL・公開範囲への配備まで承認済み。追加の認証・権限・設定変更はしない。
 - 実行: DUMS2022/local、`/Users/daishin/Documents/Codex/Drag`。担当タスク `01a104b2-271d-7e92-8139-575bb6c6a8d4`。確認開始2026-11-06 08:22 JST、公開保留の記録08:27 JST。
 - 現行MODEL_SELECTION（2026-10-21適用）はgpt-6.1-sol/medium以上。前回の正式指定はgpt-6.1-sol/high。今回の既存設定維持指示に従い設定変更していない。現在ターンのmodel/effortを正式APIで独立実測する項目は取得できず、実設定の適合や実モデル確認済みとは扱わない。
@@ -44,7 +44,7 @@
 |ローカル通常HTTP|`127.0.0.1:3107`の本番ビルドでGET / 200、既存5薬剤名・安全文言を確認。メイアクトの正常POST 200、2候補、Cache-Control: no-store|
 |既存本番の通常HTTP|GET / 200、既存5薬剤名・安全文言。メイアクト正常POST 200、2候補、no-store。ただし更新前の本番に対する確認|
 |ブラウザ画面・解析・曲線・比較・印刷・PC/スマホ・console|passed。専用Chromeタブでローカル16.4.5の実解析、100→200mg候補切替、比較の明示オン、曲線追加、印刷ページとツール復帰を確認。PC1280pxと390pxで主要表示を画像確認。console error 0、警告はMetaMask拡張のcontent script由来のみ。印刷ページ表示の確認であり、紙への出力は行わない|
-|commit / push / 新production配備|公開前検証合格後に実施。具体的結果は下記へ追記|
+|commit / push / 新production配備|passed。公開前検証合格後に実施。具体的結果は下記|
 
 任意の実ZIP fixtureを要求する既存1件は未配置でskip。通常HTTPで実PMDA取得・解析を別途確認したが、このfixture試験そのものが成功したとは扱わない。localhost確認サーバーは本タスクが起動し、確認後に停止済み。原資料・秘密・個人データ・新規backup・大容量証跡は保存していない。このGit管理文書とチャットのツール結果が実行記録。
 
@@ -52,7 +52,7 @@
 
 - Vercel project設定は24.xを正規APIで確認。既存deploymentのbuild logはNext 16.4.1を示すが、Node実build patchは記載なし。実runtime patchも未確認。新しい診断endpointや秘密の読取りは行っていない。
 - [Vercel公式Node告知](https://vercel.com/kb/bulletin/node-js-security-advisory)は10/28 11am PT（10/29 03:00 JST）以降の全new deploymentが修正済みNodeを使うと記載。24系列の修正版は24.22.1。providerの記載であり、この関数のruntime独立測定ではない。
-- 現productionの作成は10/24、上記日時より前。今回の新deploymentはまだ作成しておらず、今回再配備でprovider条件を満たしたとは報告しない。
+- 更新前productionの作成は10/24で、provider記載の適用日時より前。今回の新production作成は11/06 08:41:26 JSTで適用日時より後であり、新配備はproviderが示す修正済みNodeの対象。ただしbuild/runtime patchの独立測定ではない。
 - ローカル検証Nodeはv26.13.0。Vercelのbuild/runtime版を示す値ではない。OS/システムNode更新なし。
 
 ## ブラウザ利用の切り分けと再開
@@ -65,4 +65,12 @@
 
 ## 公開結果
 
-公開前検証を完了した状態の記録。通常commit/push後の新productionについてREADY・full commit・alias・公開時刻・正常HTTP/主要操作を確認し、結果を追記する。
+- コード更新commit: `f1c748dc45b1a125aa293d2d14b41cfdf319e7b3`。通常pushでorigin/mainへ反映。変更はNext依存2ファイルと本記録のみ。API安全対策・UI/model/parser/test・認証/公開設定の変更なし。
+- production deployment: `dpl_GYsZiwTa4R1EGmWpQwu4Qatvjd8Q`、READY、source=git、上記full commitと一致、aliasErrorなし。
+- deployment URL: <https://pmda-pk-curve-viewer-kr63hk97l-dueyamas-projects.vercel.app>。既存公開alias <https://pmda-pk-curve-viewer.vercel.app/> の割当を正規APIで照合。
+- 作成2026-11-06 08:41:26 JST、READY 08:41:48 JST。正規build logにNext.js 16.4.5。Node実build patchの記載はなく、実runtime patchも未確認。
+- 公開後のGET / は200、既存薬剤カードと安全文言を保持。正常なメイアクトPOSTは200、2候補、no-store。
+- 正式Chrome接続の専用タブで、公開URLのカード選択、実解析完了、Cmax 1.66 μg/mL / tmax 1.4 hr / t1/2 0.8 hr、比較の明示オンと2曲線、印刷ページとツール復帰を確認。公開ページのスクリーンショットでも曲線・日本語表示・安全文言を確認。console error 0。
+- 当該deploymentのREADY以降（08:41:48〜08:45:33 JST）のerror/fatalログは正規APIで0件。長期監視や全リクエストの安全性を保証するものではない。drains/監視設定の追加はしていない。
+- 接続のCDP timeoutには、後から実行結果が観測できた場合と未実行の場合があった。DOM/画像で結果を確かめ、未反映の比較操作はキーボード操作で実行し、checked・比較曲線追加を確認。ツールの不安定さをUI不具合や権限拒否と混同しない。
+- この公開結果を保存する文書のみの後続commitでは、アプリのコード・manifest・lockは変更しない。Git連携で文書commitにも新productionが作られるため、最新commit/READY/aliasの対応はこの会話の最終確認結果にも記録する。復旧基準は引き続きAPI安全対策を含むad5b5d9と旧deploymentであり、復旧操作は行っていない。
