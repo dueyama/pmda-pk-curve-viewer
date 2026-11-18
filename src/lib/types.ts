@@ -15,6 +15,12 @@ export type PkCandidate = {
   cmax: NumericParameter | null;
   tmax: NumericParameter | null;
   halfLife: NumericParameter | null;
+  halfLifeSource?: {
+    kind: "table" | "text";
+    label: string;
+    // 半減期の列が複数ある表では、採用した列を1から数える。
+    column?: number;
+  };
   auc: NumericParameter | null;
   modelExclusionReason?: string;
   // 出典条件を確認した参考モデルでだけ、ka < ke の形状推定を許可する。

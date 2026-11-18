@@ -41,6 +41,7 @@ test("結合されたtmax範囲を各用量へ展開し、出典の範囲と中�
     ["錠250mg", 3.9, 3.1], ["錠500mg", 6, 3.3], ["カプセル500mg", 5.5, 3.3],
   ]);
   for (const candidate of data.candidates) {
+    assert.deepEqual(candidate.halfLifeSource, { kind: "table", label: "t1/2（hr）" });
     assert.equal(candidate.tmax.raw, "2～3");
     assert.equal(candidate.tmax.mean, 2.5);
     assert.match(candidate.tmax.calculationNote, /中間値2.5 hr/);
@@ -49,4 +50,14 @@ test("結合されたtmax範囲を各用量へ展開し、出典の範囲と中�
     assert.ok(result.points.every(p => Number.isFinite(p.concentration) && p.concentration >= 0));
     assert.ok(Math.abs(result.points.find(p => p.hour === 2.5).concentration - candidate.cmax.mean) < 1e-10);
   }
+});
+
+test("半減期の列が複数ある表では、計算に使った値と列を対応づける", () => {
+  const cells = (values) => values.map(value => `<SimpTblCell><Detail><Lang>${value}</Lang></Detail></SimpTblCell>`).join("");
+  const data = parsePmdaXml(`<PackIns><Pharmacokinetics><BloodLevel><Section><Header>単回投与</Header><TblBlock><SimpleTable>
+    <SimpTblRow>${cells(["投与量", "Cmax（ng/mL）", "tmax（hr）", "半減期α（hr）", "半減期β（hr）"])}</SimpTblRow>
+    <SimpTblRow>${cells(["60mg", "248", "2.2", "4.6±1.1", "9.6±5.7"])}</SimpTblRow>
+  </SimpleTable></TblBlock></Section></BloodLevel></Pharmacokinetics></PackIns>`, sourceUrl);
+  assert.deepEqual(data.candidates[0].halfLife, { raw: "4.6±1.1", mean: 4.6, unit: "hr" });
+  assert.deepEqual(data.candidates[0].halfLifeSource, { kind: "table", label: "半減期α（hr）", column: 4 });
 });

@@ -411,7 +411,7 @@ const GLOSSARY_TERMS = [
   {
     term: "t1/2 / 半減期",
     description:
-      "濃度が半分になるまでのおおよその時間です。長いほど体内に残る感じが長くなり、定常状態へ近づくのも遅くなります。",
+      "濃度が半分になるまでの時間です。消失半減期は終盤の減り方から求めることが多く、減り方が途中で変わる場合はピークから半分になるまでの時間と異なります。",
   },
   {
     term: "AUC",
@@ -903,6 +903,9 @@ export function PkViewer() {
           {selectedCandidate?.tmax?.calculationNote && (
             <p className="warning-copy">tmax: 添文の{selectedCandidate.tmax.raw} {selectedCandidate.tmax.unit}に対し、{selectedCandidate.tmax.calculationNote}する近似です。</p>
           )}
+          {series.length > 0 && selectedCandidate && loadState.status === "ready" && (
+            <HalfLifeNotice candidate={selectedCandidate} sourceUrl={loadState.data.sourceUrl} />
+          )}
 
           {series.length > 0 ? (
             <ConcentrationChart
@@ -1223,6 +1226,29 @@ function MetricStrip({
   );
 }
 
+function HalfLifeNotice({ candidate, sourceUrl }: { candidate: PkCandidate; sourceUrl: string }) {
+  const { halfLife, halfLifeSource, label, tableCaption } = candidate;
+  if (!halfLife) return null;
+
+  return (
+    <div className="model-explain half-life-notice">
+      <strong>計算に使った半減期 {halfLife.mean} {halfLife.unit || "時間（添文の単位表記なし）"}</strong>
+      <p>
+        <a href={pmdaPackageInsertUrl(sourceUrl)} target="_blank" rel="noreferrer">PMDA電子添文 16.1 血中濃度</a>
+        {` ／ ${label}`}
+        {tableCaption && halfLifeSource?.kind !== "text" && ` ／ ${tableCaption}`}
+        {halfLifeSource && ` ／ ${halfLifeSource.kind === "table" ? "表" : "本文"}の項目「${halfLifeSource.label}」`}
+        {halfLifeSource?.column && `（第${halfLifeSource.column}列）`}
+        {` ／ 添文に記載された値 ${halfLife.raw}`}
+      </p>
+      <p>
+        {halfLifeSource?.column && "半減期の列が複数あります。採用した列と算出区間は添文で確認してください。"}
+        この曲線は添文の値からの概算です。終盤の半減期を使った場合など、ピーク後の下がり方や谷の濃度は実測とずれることがあります。
+      </p>
+    </div>
+  );
+}
+
 function ReferenceModelNotice({
   reference,
   compact = false,
@@ -1405,10 +1431,6 @@ function ConcentrationChart({
 
 function SourceSummary({ data }: { data: ParsePmdaResult }) {
   const example = EXAMPLE_DRUGS.find((drug) => normalizePmdaExampleUrl(drug.url) === normalizePmdaExampleUrl(data.sourceUrl));
-  const pmdaDetailUrl = data.sourceUrl.replace(
-    "/PmdaSearch/iyakuDetail/ResultDataSetXML/",
-    "/PmdaSearch/iyakuDetail/",
-  );
 
   return (
     <div className="source-summary">
@@ -1421,7 +1443,7 @@ function SourceSummary({ data }: { data: ParsePmdaResult }) {
         {data.packageInsertNo} {data.revision}
       </p>
       <div className="source-links">
-        <a href={pmdaDetailUrl} target="_blank" rel="noreferrer">
+        <a href={pmdaPackageInsertUrl(data.sourceUrl)} target="_blank" rel="noreferrer">
           PMDA添文ページ
         </a>
         <a href={data.sourceUrl} target="_blank" rel="noreferrer">
@@ -1433,6 +1455,10 @@ function SourceSummary({ data }: { data: ParsePmdaResult }) {
       </div>
     </div>
   );
+}
+
+function pmdaPackageInsertUrl(sourceUrl: string): string {
+  return sourceUrl.replace("/PmdaSearch/iyakuDetail/ResultDataSetXML/", "/PmdaSearch/iyakuDetail/");
 }
 
 function OfficialSummary({ data }: { data: ParsePmdaResult }) {

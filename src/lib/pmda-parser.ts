@@ -181,6 +181,9 @@ function extractCandidates(tables: ExtractedTable[]): PkCandidate[] {
 
     const { headerRowIndex, headers, indexes } = headerShape;
     const doseIndex = indexes.dose >= 0 ? indexes.dose : guessDoseIndex(indexes);
+    const hasMultipleHalfLifeColumns = headers.some((header, index) =>
+      index !== indexes.halfLife && matchesHeader(header, PARAMETER_KEYS.halfLife),
+    );
 
     table.rows.slice(headerRowIndex + 1).forEach((row, rowIndex) => {
       const rowRecord = Object.fromEntries(
@@ -205,6 +208,11 @@ function extractCandidates(tables: ExtractedTable[]): PkCandidate[] {
         cmax,
         tmax,
         halfLife,
+        halfLifeSource: {
+          kind: "table",
+          label: headers[indexes.halfLife],
+          ...(hasMultipleHalfLifeColumns ? { column: indexes.halfLife + 1 } : {}),
+        },
         auc: indexes.auc >= 0 ? parameterFrom(row[indexes.auc], headers[indexes.auc]) : null,
         ...(/(?:反復|連続)投与|定常状態/.test([...table.context, table.caption, ...row].join(" "))
           ? { modelExclusionReason: "反復投与・定常状態の値は単回投与のCmaxとして使えないため、曲線計算の対象外です。" }
@@ -245,13 +253,15 @@ function extractNarrativeSentenceCandidates(sentence: string, sentenceIndex: num
     /血(?:中|漿中)濃度[-‐‑‒–—―－ー]?時間曲線下面積(?:[（(][^）)]*[）)])?は、?それぞれ/,
     [/消失半減期/],
   );
+  const halfLifeStart = /(消失半減期(?:[（(][^）)]*[）)])?)は、?それぞれ/;
+  const halfLifeLabel = halfLifeStart.exec(sentence)?.[1];
   const halfLifeClause = clauseAfter(
     sentence,
-    /消失半減期(?:[（(][^）)]*[）)])?は、?それぞれ/,
+    halfLifeStart,
     [/であった/, /である/, /。/],
   );
 
-  if (!cmaxClause || !tmaxClause || !halfLifeClause) {
+  if (!cmaxClause || !tmaxClause || !halfLifeClause || !halfLifeLabel) {
     return [];
   }
 
@@ -292,6 +302,7 @@ function extractNarrativeSentenceCandidates(sentence: string, sentenceIndex: num
       cmax: parameterFrom(cmaxValues[index], cmaxHeader),
       tmax: parameterFrom(tmaxValues[index], tmaxHeader),
       halfLife: parameterFrom(halfLifeValues[index], halfLifeHeader),
+      halfLifeSource: { kind: "text", label: halfLifeLabel },
       auc: aucValue ? parameterFrom(aucValue, aucHeader) : null,
     };
   });
@@ -404,10 +415,12 @@ function extractUnit(header: string): string {
 }
 
 function findHeaderIndex(headers: string[], needles: string[]): number {
-  return headers.findIndex((header) => {
-    const compact = compactText(header).toLowerCase();
-    return needles.some((needle) => compact.includes(compactText(needle).toLowerCase()));
-  });
+  return headers.findIndex((header) => matchesHeader(header, needles));
+}
+
+function matchesHeader(header: string, needles: string[]): boolean {
+  const compact = compactText(header).toLowerCase();
+  return needles.some((needle) => compact.includes(compactText(needle).toLowerCase()));
 }
 
 function normalizeHeader(value: string): string {

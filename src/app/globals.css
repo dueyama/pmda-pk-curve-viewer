@@ -1033,6 +1033,16 @@ h1 {
   overflow: hidden;
 }
 
+.half-life-notice {
+  overflow-wrap: anywhere;
+}
+
+.half-life-notice a {
+  color: var(--accent-dark);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .chart-wrap svg {
   display: block;
   height: auto;
